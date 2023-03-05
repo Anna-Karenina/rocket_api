@@ -1,5 +1,9 @@
 #[macro_use]
 extern crate rocket;
+extern crate diesel;
+
+#[macro_use]
+extern crate rocket_sync_db_pools;
 
 use rocket::response::status;
 use rocket::serde::json::{json, Value};
@@ -7,8 +11,11 @@ use rocket::serde::json::{json, Value};
 mod auth;
 use auth::BasicAuth;
 
+#[database("sqlite")] //drops from Rocket.toml file
+struct DataBaseConnection(diesel::SqliteConnection);
+
 #[get("/rustaceans")]
-fn get_rustacens(_auth: BasicAuth) -> Value {
+fn get_rustacens(_auth: BasicAuth, _db: DataBaseConnection) -> Value {
     json!([
     {"id": 1, "name": "John Doe"},
     {"id": 2, "name": "John Doe next"},
@@ -63,6 +70,7 @@ async fn main() {
             ],
         )
         .register("/", catchers![not_found, unauthorized])
+        .attach(DataBaseConnection::fairing())
         .launch()
         .await;
 }
